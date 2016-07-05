@@ -1,3 +1,10 @@
+Actions that invoke the `beforeunload` event:
+1. navigating to another page directly in the address bar or via a link.
+2. closing or refresh current page.
+3. operating the location object of current page.
+4. invocation of `window.navigate` method
+5. invocation of `window.open` or `document.open` method to load a document in the same page.
+
 ### under Chromium
   error message `Blocked alert/prompt/confirm() during beforeunload/unload.` would come up, when we call alert,prompt and confirm method of Window object in beforeunload or unload event handler.
   if the return value of `beforeunload` event handler was null or undefined,the alert/prompt/confirm dialog would not show up. if the return value of `beforeunload` is the one except null or undefined, it would be as the text of confirm dialog before close/refresh the page.(caution: without invocation of alert, prompt or confirm method)
@@ -12,6 +19,11 @@
   method e.preventDefault does not work.
 
   it's ok to do request by ajax under beforeunload or unload.
+
+>Since 25 May 2011, the HTML5 specification states that calls to `window.showModalDialog()`, `window.alert()`, `window.confirm()` and `window.prompt()` methods may be ignored during this event.
+>You can and should handle this event through `window.addEventListener()` and the `beforeunload` event.
+
+[](https://developer.mozilla.org/en-US/docs/Web/API/WindowEventHandlers/onbeforeunload#Notes)
 
 ### under Opera
   there is no `beforeunload` event
