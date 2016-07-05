@@ -24,8 +24,27 @@
 2. `beforeunload`和`unload`的兼容性.
 
 ### `beforeunload`和`unload`的功能定位是什么？
+&emsp;`beforeunload`顾名思义就是在`unload`前触发，经常建议将资源释放或各种收尾工作均放在这里执行，但为什么呢？为什么不能放到`unload`事件中呢？
+&emsp;`unload`就是正在进行页面内容卸载时触发的，这时页面处于以下一个特殊的临时l状态:
+1. 页面所有资源(img, iframe等)均未被释放;
+2. 页面可视区域一片空白;
+3. UI人机交互失效(`window.open,alert,confirm`全部失效);
+4. 没有任何操作可以阻止`unload`过程的执行。(`unload`事件的Cancelable属性值为No)
+&emsp;那么反过来看看`beforeunload`事件，这时页面状态大致与平常一致：
+1. 页面所有资源均未释放，且页面可视区域效果没有变化;
+2. UI人机交互失效(`window.open,alert,confirm`全部失效);
+3. 最后时机可以阻止`unload`过程的执行.(`beforeunload`事件的Cancelable属性值为Yes)
+&emsp;假设我们将释放资源的操作放在`unload`事件中，倘若操作较为耗时那白屏现象明显，极大地降低友好度。假如你绝的UX上问题还不足说服你，那功能上的可用性我想就无法避免了。
+```
+window.addEventListener('beforeunload', dispose)
+window.addEventListener('unload', dispose)
+```
+在Chrome/Chromium下，unload事件处理函数的xhr对象偶然能成功发送网络请求,而beforeunload事件处理函数的xhr对象则能稳定的发送网络请求。推测是由于unload事件执行过程迅速，来不及发送网路请求就已被回收所导致的。在firefox下，两个事件均可以稳定的发送网络请求。
 
 ### `beforeunload`和`unload`的兼容性
+&emsp;对于移动端浏览器而言(Safari, Opera Mobile等)而言不支持`beforeunload`事件。
+pageshow, is fired when a session history entry is being traversed to.(includes back/forward as well as initial page-showing after the onload event)
+pagehide, is fired when a session history entry is being traversed from.
 
 
 ## 防数据丢失机制——二次确认
@@ -34,9 +53,18 @@
 ### 坑2: 被`window.alert/confirm/prompt/showModalDialog`无视
 ### 坑3: 尊重用户的选择
 
+## 问题未解决——Cross-domain Redirection
 
 ## 总结
   尊重原创，转载请注明来自：肥子John
 
 ## 感谢
 [window-onbeforeunload-not-working](http://stackoverflow.com/questions/7255649/window-onbeforeunload-not-working)
+[beforeunload](https://developer.mozilla.org/en/docs/Web/Events/beforeunload)
+[unload](https://developer.mozilla.org/en-US/docs/Web/Events/unload)
+[prompt-to-unload-a-document](https://html.spec.whatwg.org/#prompt-to-unload-a-document)
+[webkit page cache i - the basics](https://webkit.org/blog/427/webkit-page-cache-i-the-basics/)
+[webkit page cache ii - the unload event](https://webkit.org/blog/516/webkit-page-cache-ii-the-unload-event/)
+[pagehide](https://developer.mozilla.org/en-US/docs/Web/Events/pagehide)
+[pageshow](https://developer.mozilla.org/en-US/docs/Web/Events/pageshow)
+[Redirects Do’s and Don’ts](http://www.redirect-checker.org/redirects-dos-donts.php)
