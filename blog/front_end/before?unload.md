@@ -194,6 +194,8 @@ var prefix = 'on'
 6. 页面在iframe中渲染，当用户修改iframe.src加载其他文档到该iframe时
 &emsp;因此若执行不可逆的清理工作时，对于现代浏览器而言我们应该订阅`pagehide`事件，而不是`unload`事件，以便利用Page Cache机制。
 事件发生顺序：`load`->`pageshow`->`pagehide`->`unload`
+`pageshow`和`pagehide`的事件对象存在一个`persisted`属性，为true时表示从cache中恢复，false表示重新实例化。
+但我试了N次，发现persisted一直为false，望大神们开解开解:)
 
 
 ## 总结
