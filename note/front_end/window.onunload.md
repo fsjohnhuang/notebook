@@ -11,8 +11,6 @@ Actions that invoke the `beforeunload` event:
  method e.preventDefault does not work.
  IE is in the same way(event.returnValue = "<text>")
 
-  do request by ajax under beforeunload event handler rather than unload. because of request would be missed in unload event handler.
-
 ### under Firefox
   there is no response even error, when we call alert,prompt and confirm method of Window object in beforeunload or unload event handler.
   as long as the return value of `beforeunload` event handler is the one except of null/undefined, there would be confirm dialog show up before close or refresh the page.but no customized text of the confirm.
@@ -32,9 +30,6 @@ Actions that invoke the `beforeunload` event:
   there is no `beforeunload` event, but support `unload`
 
 
-event.preventDefault()
-return value or event.returnValue
-
 DOM2 handler(addEventListener), return false would not prevent the default.
 Microsoft DOM2-ish handler(attachEvent), `event.returnValue` is false would prevent the default.
 DOM0 handler(onclick=""), return false would prevent the default.
@@ -51,3 +46,9 @@ ie8-10
 `pvarEventObject`, an object that specifies an existing event object on which to base the new object. null or undefined to specify a new, blan event object.
   Generates an event object to pass event context info when use the `object.fireEvent` method.
 #### ``
+
+## The Page Cache
+[webkit-page-cache-i-the-basics](https://webkit.org/blog/427/webkit-page-cache-i-the-basics/)
+
+
+session history entry

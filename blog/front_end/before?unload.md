@@ -1,4 +1,4 @@
-# JS魔法堂:[before]unload事件启示录
+# JS魔法堂:定义页面的Dispose方法——[before]unload事件启示录
 ## 前言
 &emsp;最近实施的同事报障，说用户审批流程后直接关闭浏览器，操作十余次后系统就报用户会话数超过上限，咨询4A同事后得知登陆后需要显式调用登出API才能清理4A端，否则必然会超出会话上限。
 &emsp;即使在页面上增添一个登出按钮也无法保证用户不会直接关掉浏览器，更何况用户已经习惯这样做，增加功能好弄，改变习惯却难啊。这时想起N年用过的`window.onbeforeunload`和`window.onunload`事件。
@@ -24,8 +24,8 @@
 2. `beforeunload`和`unload`的兼容性.
 
 ### `beforeunload`和`unload`的功能定位是什么？
-&emsp;`beforeunload`顾名思义就是在`unload`前触发，经常建议将资源释放或各种收尾工作均放在这里执行，但为什么呢？为什么不能放到`unload`事件中呢？
-&emsp;`unload`就是正在进行页面内容卸载时触发的，这时页面处于以下一个特殊的临时l状态:
+&emsp;`beforeunload`顾名思义就是在`unload`前触发，可通过弹出二次确认对话框来试图终断执行unload.
+&emsp;`unload`就是正在进行页面内容卸载时触发的，一般在这里进行一些重要的清理善后工作，而这时页面处于以下一个特殊的临时状态:
 1. 页面所有资源(img, iframe等)均未被释放;
 2. 页面可视区域一片空白;
 3. UI人机交互失效(`window.open,alert,confirm`全部失效);
@@ -34,15 +34,9 @@
 1. 页面所有资源均未释放，且页面可视区域效果没有变化;
 2. UI人机交互失效(`window.open,alert,confirm`全部失效);
 3. 最后时机可以阻止`unload`过程的执行.(`beforeunload`事件的Cancelable属性值为Yes)
-&emsp;假设我们将释放资源的操作放在`unload`事件中，倘若操作较为耗时那白屏现象明显，极大地降低友好度。假如UX上问题还不足说服你的话，那功能上的可用性我想就无法逃避了。
-```
-window.addEventListener('beforeunload', dispose)
-window.addEventListener('unload', dispose)
-```
-在Chrome/Chromium下，unload事件处理函数的xhr对象偶然能成功发送网络请求,而beforeunload事件处理函数的xhr对象则能稳定的发送网络请求。推测是由于unload事件执行过程迅速，来不及发送网路请求就已被回收所导致的。在firefox下，两个事件均可以稳定的发送网络请求。
 
 ### `beforeunload`和`unload`的兼容性
-&emsp;对于移动端浏览器而言(Safari, Opera Mobile等)而言不支持`beforeunload`事件。
+&emsp;对于移动端浏览器而言(Safari, Opera Mobile等)而言不支持`beforeunload`事件,也许是因为移动端不建议干扰用户操作流程吧。
 
 
 ## 防数据丢失机制——二次确认
@@ -159,10 +153,10 @@ window.addEventListener('beforeunload', dispose)
 
 var url = "http://pseudo.com/logout",
     logout = new Logout(url)
-var dispose = genDispose($.proxy(logout.exec, logout))
+var dispose = $.proxy(logout.exec, logout)
 
 var prefix = 'on'
-(wndow.attachEvent || (prefix='', window.addEventListener))(prefix + 'beforeunload', dispose)
+(window.attachEvent || (prefix='', window.addEventListener))(prefix + 'unload', dispose)
 ```
 &emsp;当我以为这样就能交功课时，却发现登出url响应状态编码为302，而响应头Location指向另一个域的资源，并且不存在Access-Control-Allow-Origin等CORS响应头信息，而XHR对象不支持Cross-domain Redirection，因此登出失效。
 &emsp;以前只知道XHR无法执行Cross-domain资源的读操作（支持写操作）,但只以为仅仅是不支持respose body的读操作而已，没想到连respose header的读操作也不支持。那怎么办呢？既然读操作不行那采用嵌套Cross-domain资源总行吧。然后有了以下的填坑过程:
@@ -185,9 +179,22 @@ var prefix = 'on'
 }(window))
 ```
 
-## 更合适的Dispose时机——`pagehide`事件
-pageshow, is fired when a session history entry is being traversed to.(includes back/forward as well as initial page-showing after the onload event)
-pagehide, is fired when a session history entry is being traversed from.
+## [before]unload导致性能下降？
+&emsp;现在我们都明白如何利用`[before]unload`来做资源释放等善后工作了。
+&emsp;但请记住一点：由于`[before]unload`事件会降低页面性能，因此仅由于需要做重要的善后或不可逆的清理工作时才监听这两个事件。
+&emsp;以前，当我们从页面A跳转到页面B时，页面A的所有资源将被释放（销毁DOM对象,回收JS对象, 释放解码后的Image资源等）;后来各大浏览器厂商分别采用bfcache/page cache/fast history navigation机制，将页面A的状态保存到缓存中，当通过浏览器的后退/前进按钮跳转时马上从缓存中恢复页面，而不是重新实例化。以下情况将不被缓存起来：
+1. 监听`unload`或`beforeunload`事件;
+2. 响应头`Cache-Control: no-store`;
+3. 对于采用HTTPS协议的响应头，满足以下一个或以上：
+  3.1. `Cache-Control: no-cache`
+  3.2. `Pragma: no-cache`
+  3.3. 存在`Expires`超期的
+4. 发生跳转时，页面存在未加载完的资源
+5. 旗下iframe存在上述情况的
+6. 页面在iframe中渲染，当用户修改iframe.src加载其他文档到该iframe时
+&emsp;因此若执行不可逆的清理工作时，对于现代浏览器而言我们应该订阅`pagehide`事件，而不是`unload`事件，以便利用Page Cache机制。
+事件发生顺序：`load`->`pageshow`->`pagehide`->`unload`
+
 
 ## 总结
   尊重原创，转载请注明来自：肥子John
@@ -202,3 +209,4 @@ pagehide, is fired when a session history entry is being traversed from.
 [pagehide](https://developer.mozilla.org/en-US/docs/Web/Events/pagehide)
 [pageshow](https://developer.mozilla.org/en-US/docs/Web/Events/pageshow)
 [Redirects Do’s and Don’ts](http://www.redirect-checker.org/redirects-dos-donts.php)
+[Using_Firefox_1.5_c    aching#New_browser_events](https://developer.mozilla.org/en-US/Firefox/Releases/1.5/Using_Firefox_1.5_caching#New_browser_events)
