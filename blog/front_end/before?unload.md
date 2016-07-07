@@ -195,10 +195,53 @@ var prefix = 'on'
 &emsp;因此若执行不可逆的清理工作时，对于现代浏览器而言我们应该订阅`pagehide`事件，而不是`unload`事件，以便利用Page Cache机制。
 事件发生顺序：`load`->`pageshow`->`pagehide`->`unload`
 `pageshow`和`pagehide`的事件对象存在一个`persisted`属性，为true时表示从cache中恢复，false表示重新实例化。
-但我试了N次，发现persisted一直为false，望大神们开解开解:)
+&emsp;经简单测试发现chrome默认没有启用该特性，而Firefox则默认启用。实验代码：
+```
+// index.html
+window.addEventListener('load', function(){
+  console.log("index.load")
+  window.test = true
+})
+window.addEventListener('pageshow', function(e){
+  console.log("index.pageshow.persisted:" + e.persisted)
+  console.log("index.test:" + window.test)
+})
+
+<a href="./next.html">next.html</a>
+```
+```
+// next.html
+window.addEventListener('load', function(){
+  console.log("next.load")
+})
+window.addEventListener('pageshow', function(e){
+  console.log("next.pageshow.persisted:" + e.persisted)
+})
+```
+运行环境：FireFox
+操作步骤：1.首先访问index.html，2.然后点击链接跳转到next.html，3.然后点击浏览器的回退按钮跳转到index.html，4.最后点击浏览器的前进按钮跳转到next.html。
+输出结果：
+```
+// 1
+index.load
+index.pageshow.persisted:false
+index.test:true
+// 2
+next.load
+next.pageshow.persisted:false
+// 3
+index.pageshow.persisted:true
+index.test:true
+//4
+next.pageshow.persisted:true
+```
+&emsp;看到页面是从bfcache恢复而来的，所以JS对象均未回收，因此`window.test`值依然有效。另外load仅在页面初始化后才会触发，因此从bfcache中恢复页面时并不会触发。
+&emsp;假如在index.html上订阅了`unload`或`beforeunload`事件，那么该页面将不会保存到bfcache。
+&emsp;另外通过jQuery.ready来监听页面初始化事件时，不用考虑bfcache的影响，因为它帮我们处理好了:)
 
 
 ## 总结
+  若有纰漏望请指正，谢谢！
   尊重原创，转载请注明来自：肥子John
 
 ## 感谢
@@ -212,3 +255,4 @@ var prefix = 'on'
 [pageshow](https://developer.mozilla.org/en-US/docs/Web/Events/pageshow)
 [Redirects Do’s and Don’ts](http://www.redirect-checker.org/redirects-dos-donts.php)
 [Using_Firefox_1.5_c    aching#New_browser_events](https://developer.mozilla.org/en-US/Firefox/Releases/1.5/Using_Firefox_1.5_caching#New_browser_events)
+[cross-browser-onload-event-and-the-back-button](http://stackoverflow.com/questions/158319/cross-browser-onload-event-and-the-back-button)
