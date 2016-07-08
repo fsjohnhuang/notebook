@@ -79,26 +79,6 @@ caution:
 1. can not set the top-level domain as value.(e.g. `document.domain="com"` is illegal)
 2. if `document.domain` is successfully set, the port part is also set to null.
 
-top-level domain(TLD), the first-level domain includs generic top-level domains(gTLDs) and country code top-level domains(ccTLDs)
-  gTLDs, e.g. com,org,gov,edu,mil,net
-  ccTLDs, e.g. hk,cn,uk,jp
-base domain, the second-level domain
-superdomain
-  midea.com is the superdomain of www.midea.com.
-subdomain
-  www.midea.com is the subdomain of midea.com.
-domain name is consist of labels and dots.(e.g. midea.com is consist of labels midea and com)
-
-hostname, is a domain name that has at least one IP address.
-n-level domain(e.g. first-level or second-level domain) refers the specific label of domain name.
-the second-level domain of www.midea.com is midea, but the third-level domain is www.
-
-DNS(Domain Name System) record, tells you how to use the domain name.
-Kinds of DNS records
-  A-record, is used when accesses website.
-  MX record, is used when delivers mail.
-  TXT record, is used to verify domain name ownership.
-
 
 [CORS(Cross-Origin Resource Sharing)](https://www.w3.org/TR/cors/)
 W3C and Web Application Working Group recommends CORS mechanism.
