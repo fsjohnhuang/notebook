@@ -9,6 +9,12 @@
   3.2. share the socket pool of top window
   3.3. require a lot of memory
 
+## HTML Element
+```
+@prop 
+```
+
+
 
 ##1.Communication between cross-domain iframes
 ### 1.1. by `Window.postMessage()`
